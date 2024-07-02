@@ -1,5 +1,5 @@
 # Communication Using SOME/IP Protocol
-This project sends the temperature of a device's 4 logical cores to a receiver using SOME/IP protocol using a UDP layer.
+This project sends the temperature of a device's 4 logical cores to a receiver using SOME/IP protocol using a UDP layer. This project is based on this repository: https://github.com/chrizog/someipy
 
 # Dependencies
 ```bash
