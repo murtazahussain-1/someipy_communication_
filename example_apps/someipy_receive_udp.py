@@ -7,10 +7,10 @@ from someipy.client_service_instance import construct_client_service_instance
 from someipy.logging import set_someipy_log_level
 from temperature_msg import TemparatureMsg
 
+# Configuration constants
 SD_MULTICAST_GROUP = "224.224.224.245"
 SD_PORT = 30490
 LOCAL_INTERFACE_IP = "192.168.0.103"
-
 SAMPLE_SERVICE_ID = 0x1234
 SAMPLE_INSTANCE_ID = 0x5678
 SAMPLE_EVENTGROUP_ID = 0x0321
@@ -28,6 +28,7 @@ def temperature_callback(someip_message: SomeIpMessage) -> None:
     """
     try:
         print(f"Received {len(someip_message.payload)} bytes. Try to deserialize..")
+        # Deserialize the received message
         temperature_msg = TemparatureMsg().deserialize(someip_message.payload)
         print(f"Deserialized message: {temperature_msg}")
         print(f"Measurements: {[m.value for m in temperature_msg.measurements.data]}")
@@ -37,9 +38,12 @@ def temperature_callback(someip_message: SomeIpMessage) -> None:
 async def main():
     set_someipy_log_level(logging.DEBUG)
 
+    # Initialize service discovery
     service_discovery = await construct_service_discovery(SD_MULTICAST_GROUP, SD_PORT, LOCAL_INTERFACE_IP)
 
+    # Configure the temperature event group
     temperature_eventgroup = EventGroup(id=SAMPLE_EVENTGROUP_ID, event_ids=[SAMPLE_EVENT_ID])
+    # Build the temperature service
     temperature_service = (
         ServiceBuilder()
         .with_service_id(SAMPLE_SERVICE_ID)
@@ -48,6 +52,7 @@ async def main():
         .build()
     )
 
+    # Create the client service instance
     service_instance_temperature = await construct_client_service_instance(
         service=temperature_service,
         instance_id=SAMPLE_INSTANCE_ID,
@@ -57,13 +62,15 @@ async def main():
         protocol=TransportLayerProtocol.UDP
     )
 
+    # Register callback and subscribe to event group
     service_instance_temperature.register_callback(temperature_callback)
     service_instance_temperature.subscribe_eventgroup(SAMPLE_EVENTGROUP_ID)
 
+    # Attach service instance to service discovery
     service_discovery.attach(service_instance_temperature)
 
     try:
-        await asyncio.Future()
+        await asyncio.Future()  # Keep the main task running
     except asyncio.CancelledError:
         print("Shutdown..")
     finally:
