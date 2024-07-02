@@ -8,11 +8,11 @@ from someipy.logging import set_someipy_log_level
 from someipy.serialization import Uint8, Uint64, Float32
 from temperature_msg import TemparatureMsg
 
+# Configuration constants
 SD_MULTICAST_GROUP = "224.224.224.245"
 SD_PORT = 30490
 LOCAL_INTERFACE_IP = "192.168.0.105"
 REMOTE_INTERFACE_IP = "192.168.0.103"
-
 SAMPLE_SERVICE_ID = 0x1234
 SAMPLE_INSTANCE_ID = 0x5678
 SAMPLE_EVENTGROUP_ID = 0x0321
@@ -23,6 +23,7 @@ async def main():
 
     logging.debug("Initializing service discovery...")
     try:
+        # Initialize service discovery
         service_discovery = await construct_service_discovery(SD_MULTICAST_GROUP, SD_PORT, LOCAL_INTERFACE_IP)
     except OSError as e:
         logging.error(f"Failed to create service discovery: {e}")
@@ -30,7 +31,9 @@ async def main():
 
     logging.debug("Service discovery initialized.")
 
+    # Configure the temperature event group
     temperature_eventgroup = EventGroup(id=SAMPLE_EVENTGROUP_ID, event_ids=[SAMPLE_EVENT_ID])
+    # Build the temperature service
     temperature_service = (
         ServiceBuilder()
         .with_service_id(SAMPLE_SERVICE_ID)
@@ -41,6 +44,7 @@ async def main():
 
     logging.debug("Creating server service instance...")
     try:
+        # Create the server service instance
         service_instance_temperature = await construct_server_service_instance(
             temperature_service,
             instance_id=SAMPLE_INSTANCE_ID,
@@ -56,17 +60,19 @@ async def main():
 
     logging.debug("Server service instance created.")
 
+    # Attach service instance to service discovery
     service_discovery.attach(service_instance_temperature)
     print("Start offering service..")
     service_instance_temperature.start_offer()
 
+    # Initialize the temperature message
     tmp_msg = TemparatureMsg()
     tmp_msg.version.major = Uint8(1)
     tmp_msg.version.minor = Uint8(0)
 
     try:
         while True:
-            await asyncio.sleep(1)
+            await asyncio.sleep(1)  # Wait for 1 second
 
             # Get CPU temperature
             temps = psutil.sensors_temperatures()
@@ -75,11 +81,14 @@ async def main():
                 for i in range(min(len(core_temps), len(tmp_msg.measurements.data))):
                     tmp_msg.measurements.data[i] = Float32(core_temps[i].current)
 
+            # Update the timestamp
             tmp_msg.timestamp = Uint64(tmp_msg.timestamp.value + 1)
+            # Serialize the message
             payload = tmp_msg.serialize()
 
             print(f"Serialized payload: {payload.hex()}")
 
+            # Send the event with the updated payload
             service_instance_temperature.send_event(SAMPLE_EVENTGROUP_ID, SAMPLE_EVENT_ID, payload)
     except asyncio.CancelledError:
         print("Stop offering service..")
