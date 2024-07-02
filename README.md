@@ -7,7 +7,7 @@ pip3 install someipy
 pip3 install psutils
 // Also install Python 3.12>=
 ```
-# How run the project?
+# How to run the project?
 ```bash
 sudo su
 cd example_apps
@@ -19,6 +19,6 @@ source env/bin/activate
 // Start the receiver
 python3 someipy_receive_udp.py
 
-// Repeat the above mentioned steps except for the last command, on another PC
+// Repeat the above mentioned steps except the last command, on another PC
 python3 someipy_send_udp.py
 ```
